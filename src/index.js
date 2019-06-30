@@ -5,12 +5,24 @@ let onLoad = e => {
 };
 
 let main = () => {
-  let state = [ttt.state()];
+  let state = {
+    history: [
+      {
+        state: ttt.state(),
+        select: null
+      }
+    ],
+    index: 0
+  };
   let _buttons = buttons();
   let _drawBoard = drawBoard(_buttons);
 
-  drawStatus(`Player${current(state).player}'s turn`);
-  _drawBoard(current(state).board);
+  let onClickHistory = index => e => {
+    state.index = index;
+    drawStatus(`Player${current(state).player}'s turn`);
+    _drawBoard(current(state).board);
+    drawHistory(state, onClickHistory);
+  };
 
   let onClickButton = index => e => {
     if (current(state).winner || current(state).isDraw) {
@@ -21,9 +33,16 @@ let main = () => {
       return;
     }
 
-    state.push(ttt.state(current(state), index));
+    state.history = state.history.slice(0, state.index + 1);
+    state.history.push({
+      state: ttt.state(current(state), index),
+      select: index
+    });
+    state.index++;
+
     drawStatus(`Player${current(state).player}'s turn`);
     _drawBoard(current(state).board);
+    drawHistory(state, onClickHistory);
 
     if (current(state).winner) {
       drawStatus(`Winner: player${current(state).winner}`);
@@ -37,10 +56,13 @@ let main = () => {
   };
 
   _buttons.map((v, i) => v.addEventListener("click", onClickButton(i)));
+  drawStatus(`Player${current(state).player}'s turn`);
+  _drawBoard(current(state).board);
+  drawHistory(state, onClickHistory);
 };
 
 let current = state => {
-  return state[state.length - 1];
+  return state.history[state.index].state;
 };
 
 let drawStatus = msg => {
@@ -54,6 +76,23 @@ let drawBoard = buttons => board => {
     } else {
       v.innerText = "";
     }
+  });
+};
+
+let drawHistory = (state, onClickHistory) => {
+  let curIndex = state.index;
+  let ol = document.getElementById("history");
+  ol.innerHTML = "";
+
+  state.history.forEach((v, i) => {
+    let li = document.createElement("li");
+    let select = v.select !== null ? `Select ${v.select} => ` : "";
+    li.innerText = `${select}Turn${i} Player${v.state.player}`;
+    li.addEventListener("click", onClickHistory(i));
+    if (i === curIndex) {
+      li.classList.add("current");
+    }
+    ol.appendChild(li);
   });
 };
 
